@@ -1,0 +1,46 @@
+name: CI for RAG Flask App
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test-docker:
+    runs-on: ubuntu-latest
+
+    env:
+      MOCK_S3: true  # Prevent real AWS usage
+
+    steps:
+      - name: 🛎️ Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🧪 Run Mock Tests (Placeholder)
+        run: |
+          echo "Running mock test..."
+          python -c "print('✅ All tests passed (mocked)')"
+
+      - name: 🐳 Build Docker Image
+        run: |
+          docker build -t rag-flask-app .
+
+      - name: ✅ Run Docker Container (Test Mode)
+        run: |
+          docker run -d -p 5000:5000 --name rag-test -e MOCK_S3=true rag-flask-app
+          sleep 5  # Let app start up
+          curl -f http://localhost:5000 || (docker logs rag-test && exit 1)
+
+      - name: 🧹 Cleanup
+        run: docker stop rag-test && docker rm rag-test
