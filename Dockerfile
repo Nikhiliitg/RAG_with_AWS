@@ -1,17 +1,27 @@
-# Use official Python image (Slim version for smaller size)
-FROM python:3.11-slim-bookworm
+# Use stable Python image with prebuilt wheels support
+FROM python:3.10-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy only requirements first for better caching
+# Copy requirements first (Docker layer caching)
 COPY requirements.txt .
 
-# Install dependencies (Use --no-cache-dir to save space)
-RUN pip install --no-cache-dir -r requirements.txt
+# Install build tools and dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy remaining project files
+# Install Python packages
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy all project files
 COPY . .
 
-# Use correct CMD syntax (JSON array format to avoid shell issues)
-CMD ["python3", "app/main.py"]
+# Expose the port Flask runs on
+EXPOSE 5000
+
+# Run the Flask app
+CMD ["python", "main.py"]
